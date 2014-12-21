@@ -4,10 +4,12 @@ library(stringr)
 shinyServer(function(input, output, session) {
   
   getWidth = reactive({
+    return(640)
     strtoi(str_sub(input$res, 1, (str_locate(input$res, "x")[1] - 1)))
   })
   
   getHeight = reactive({
+    return(480)
     strtoi(str_sub(input$res, str_locate(input$res, "x")[1]+1, -1L))
   })
   
@@ -15,6 +17,29 @@ shinyServer(function(input, output, session) {
     input$zoom
     updateSliderInput(session, "xr", value=c(-2,2))
     updateSliderInput(session, "yr", value=c(-1.5,1.5))
+  })
+  
+  observe({
+    selection = input$myImgAreaSelect
+    if (is.null(selection)) return()
+    
+    if (selection$width > 0.01 & selection$height>0.01) {
+
+      isolate({
+        x1 = input$xr[1] + ((selection$x1 / 640) * (input$xr[2] - input$xr[1]))
+        x2 = input$xr[1] + ((selection$x2 / 640) * (input$xr[2] - input$xr[1]))
+        y1 = input$yr[1] + ((480-selection$y2) / 480) * (input$yr[2] - input$yr[1])
+        y2 = input$yr[1] + ((480-selection$y1) / 480) * (input$yr[2] - input$yr[1])
+      })
+      
+      if (x2-x1 > 0.02 & y2-y1 > 0.02) {
+        updateSliderInput(session, "xr", value=c(x1,x2))
+        updateSliderInput(session, "yr", value=c(y1,y2))         
+      }
+      else
+        print("Exceeded max zoom")
+
+    }
   })
   
   output$mandelPlot <- renderPlot({
@@ -68,6 +93,6 @@ shinyServer(function(input, output, session) {
     par(mar=c(0,0,0,0))
     image(x, y, k, col=cols, axes=F)
     
-  }, width=getWidth, height=getHeight)
+  }, width=640, height=480)#, width=getWidth, height=getHeight)
 
 })
